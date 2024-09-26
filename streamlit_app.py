@@ -10,7 +10,7 @@ import folium
 from streamlit_folium import st_folium
 
 # Load df
-df = pd.read_csv(r'C:\Users\Asus\Documents\dashboard dicoding.csv', delimiter=';')
+df = pd.read_csv('dashboard dicoding.csv', delimiter=';')
 
 # Convert order_purchase_timestamp to datetime
 df['order_purchase_timestamp'] = pd.to_datetime(df['order_purchase_timestamp'])
