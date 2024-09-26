@@ -5,8 +5,12 @@ import seaborn as sns
 import streamlit as st
 import pydeck as pdk
 from babel.numbers import format_currency
+from folium.plugins import HeatMap
+import folium
+from streamlit_folium import st_folium
+
 # Load df
-df = pd.read_csv(r'dashboard dicoding.csv', delimiter=';')
+df = pd.read_csv(r'C:\Users\Asus\Documents\dashboard dicoding.csv', delimiter=';')
 
 # Convert order_purchase_timestamp to datetime
 df['order_purchase_timestamp'] = pd.to_datetime(df['order_purchase_timestamp'])
@@ -42,54 +46,34 @@ ax.set_ylabel('Revenue')
 # Display plot
 st.pyplot(fig)
 
-# Heatmap
-st.header('Geolocation Heatmap')
+# Drop rows with NaN values in geolocation_lat and geolocation_lng
+df = df.dropna(subset=['geolocation_lat', 'geolocation_lng'])
 
-# Check if there is enough df to plot a heatmap
-if 'geolocation_lat' in df.columns and 'geolocation_lng' in df.columns:
-    # Remove rows with missing coordinates and invalid values
-    geo_df = filtered_df[['geolocation_lat', 'geolocation_lng']].dropna()
+# Pastikan tipe data geolocation_lat dan geolocation_lng menjadi float
+df['geolocation_lat'] = df['geolocation_lat'].astype(float)
+df['geolocation_lng'] = df['geolocation_lng'].astype(float)
 
-    # Make sure there are no invalid lat/lng values
-    geo_df = geo_df[(geo_df['geolocation_lat'].between(-90, 90)) & 
-                        (geo_df['geolocation_lng'].between(-180, 180))]
+# Ekstrak data latitude dan longitude ke dalam list of lists
+heat_data = df[['geolocation_lat', 'geolocation_lng']].values.tolist()
 
-    # Ensure there is df to plot
-    if not geo_df.empty:
-        # Create heatmap using pydeck
-        st.pydeck_chart(pdk.Deck(
-            map_style='mapbox://styles/mapbox/light-v9',
-            initial_view_state=pdk.ViewState(
-                latitude=geo_df['geolocation_lat'].mean(),
-                longitude=geo_df['geolocation_lng'].mean(),
-                zoom=6,
-                pitch=50,
-            ),
-            layers=[
-                pdk.Layer(
-                    'HeatmapLayer',
-                    df=geo_df,
-                    get_position='[geolocation_lng, geolocation_lat]',
-                    radius=200,
-                    elevation_scale=4,
-                    elevation_range=[0, 1000],
-                    pickable=True,
-                    extruded=True,
-                ),
-            ],
-        ))
-    else:
-        st.write("No valid geolocation df to display.")
-else:
-    st.write("Geolocation df not available in the dfset.")
-st.header('Best and Worst Performing Product by Number of Sales')
+# Membuat peta dasar
+map = folium.Map(location=[df['geolocation_lat'].mean(), df['geolocation_lng'].mean()], zoom_start=10)
+
+# Membuat heatmap
+HeatMap(heat_data).add_to(map)
+
+# Menampilkan peta di dalam Streamlit dashboard
+st.title("Dashboard Heatmap")
+st.write("Berikut adalah visualisasi heatmap dari data geolocation:")
+st_folium(map, width=700, height=500)
+
 
 # Group by product_category_name and sum qty
 product_sales = filtered_df.groupby('product_category_name')['qty'].sum().reset_index()
 
 # Sort to get best and worst performing products
-best_performing = product_sales.sort_values(by='qty', ascending=False).head(1)
-worst_performing = product_sales.sort_values(by='qty', ascending=True).head(1)
+best_performing = product_sales.sort_values(by='qty', ascending=False).head(5)
+worst_performing = product_sales.sort_values(by='qty', ascending=True).head(5)
 
 st.subheader('Best Performing Product')
 st.write(best_performing)
