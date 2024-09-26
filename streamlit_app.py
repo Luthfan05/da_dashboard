@@ -1,4 +1,3 @@
-
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -49,6 +48,12 @@ st.pyplot(fig)
 # Drop rows with NaN values in geolocation_lat and geolocation_lng
 df = df.dropna(subset=['geolocation_lat', 'geolocation_lng'])
 
+def clean_geolocation(value):
+    if isinstance(value, str):
+        # Replace commas with dots
+        value = value.replace(',', '.')
+    return float(value)
+  
 # Pastikan tipe data geolocation_lat dan geolocation_lng menjadi float
 df['geolocation_lat'] = df['geolocation_lat'].astype(float)
 df['geolocation_lng'] = df['geolocation_lng'].astype(float)
